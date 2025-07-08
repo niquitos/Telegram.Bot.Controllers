@@ -1,6 +1,4 @@
-using System;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot.Polling;
@@ -31,60 +29,56 @@ public class MessageUpdateHandler : IUpdateHandler
         if (message is not { Text: { } messageText, From: { } user, Chat: { } chat })
             return;
 
-        _logger.LogInformation($"Recieved command '{messageText}' from user '{user}'");
+        _logger.LogInformation($"Received command '{messageText}' from user '{user}'");
 
-        var controllerTypes = _serviceProvider.GetServices<TelegramBotControllerBase>().Select(c => c.GetType()).ToList();
+        var chatId = chat.Id;
+        var command = messageText.Split(' ')[0].ToLowerInvariant();
+        var pathManager = _serviceProvider.GetRequiredService<ICommandPathManager>();
+        var commandRegistry = _serviceProvider.GetRequiredService<CommandRegistry>();
 
-        foreach (var type in controllerTypes)
+        if (command == "cancel")
         {
-            var controller = (TelegramBotControllerBase)_serviceProvider.GetRequiredService(type);
+            pathManager.ClearPath(chatId);
+            await botClient.SendMessage(chatId, "Conversation closed.", cancellationToken: cancellationToken);
+
+            _logger.LogInformation($"Current path: {pathManager.GetPath(chatId)}");
+            return;
+        }
+
+        var currentPath = pathManager.UpdatePath(chatId, command);
+
+        if (commandRegistry.TryGetHandler(currentPath, out var controllerType, out var methodName))
+        {
+            var controller = (TelegramBotControllerBase)_serviceProvider.GetRequiredService(controllerType);
             controller.BotClient = botClient;
             controller.Update = update;
 
-            var methods = controller.GetType().GetMethods();
-
-            foreach (var method in methods)
+            try
             {
-                var commandAttr = method.GetCustomAttributes<CommandAttribute>().FirstOrDefault();
-                var patternAttr = method.GetCustomAttributes<PatternAttribute>().FirstOrDefault();
+                var method = controllerType.GetMethod(methodName)!;
+                var parameters = method.GetParameters();
+                object?[]? args = null;
 
-                bool shouldInvoke = false;
-
-                if (commandAttr != null)
+                if (parameters.Length > 0 && parameters[0].ParameterType == typeof(CancellationToken))
                 {
-                    var command = messageText.Split(' ')[0].ToLowerInvariant();
-                    if (command == commandAttr.Command)
-                        shouldInvoke = true;
-                }
-                else if (patternAttr != null)
-                {
-                    var regex = new Regex(patternAttr.Pattern);
-                    if (regex.IsMatch(messageText))
-                        shouldInvoke = true;
+                    args = [cancellationToken];
                 }
 
-                if (shouldInvoke)
-                {
-                    var parameters = method.GetParameters();
-                    object?[]? args = null;
+                await (Task)method.Invoke(controller, args)!;
 
-                    if (parameters.Length > 0 && parameters[0].ParameterType == typeof(CancellationToken))
-                    {
-                        args = [cancellationToken];
-                    }
-
-                    try
-                    {
-                        await (Task)method.Invoke(controller, args)!;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error invoking controller method.");
-                    }
-                    break;
-                }
+                _logger.LogInformation($"Current path: {pathManager.GetPath(chatId)}");
+                
+                return;
             }
-
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error invoking controller method.");
+            }
+        }
+        else
+        {
+            pathManager.RollbackLastSegment(chatId);
+            _logger.LogInformation($"Unknown command. Current path: {pathManager.GetPath(chatId)}");
         }
     }
 }

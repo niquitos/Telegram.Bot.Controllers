@@ -1,14 +1,14 @@
-using System;
-
 namespace Telegram.Bot.Controllers;
 
-[AttributeUsage(AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class CommandAttribute : Attribute
 {
-    public string Command { get; set; }
+    public string? Path { get; set; }
+    public bool Override { get; set; }
 
-    public CommandAttribute(string command)
+    public CommandAttribute(string? path = null, bool @override = false)
     {
-        Command = command.ToLowerInvariant();
+        Path = path?.Trim().ToLowerInvariant();
+        Override = @override;
     }
 }
