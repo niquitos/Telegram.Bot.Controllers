@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 
@@ -36,10 +37,15 @@ public class MessageUpdateHandler : IUpdateHandler
         var pathManager = _serviceProvider.GetRequiredService<ICommandPathManager>();
         var commandRegistry = _serviceProvider.GetRequiredService<CommandRegistry>();
 
-        if (command == "cancel")
+        var botConfig = _serviceProvider.GetService<IOptions<BotConfiguration>>()?.Value
+                   ?? new BotConfiguration() { CancelCommand = "cancel", CancelMessage = "Conversation closed." };
+
+        if (command == botConfig.CancelCommand)
         {
             pathManager.ClearPath(chatId);
-            await botClient.SendMessage(chatId, "Conversation closed.", cancellationToken: cancellationToken);
+            
+            if (botConfig.CancelMessage is not null)
+                await botClient.SendMessage(chatId, botConfig.CancelMessage, cancellationToken: cancellationToken);
 
             _logger.LogInformation($"Current path: {pathManager.GetPath(chatId)}");
             return;
@@ -67,7 +73,7 @@ public class MessageUpdateHandler : IUpdateHandler
                 await (Task)method.Invoke(controller, args)!;
 
                 _logger.LogInformation($"Current path: {pathManager.GetPath(chatId)}");
-                
+
                 return;
             }
             catch (Exception ex)

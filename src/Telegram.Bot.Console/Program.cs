@@ -15,8 +15,13 @@ var host = Host.CreateDefaultBuilder(args)
     .UseSerilog()
     .ConfigureServices((context, services) =>
     {
-        var token = "";//your telegram bot token here
-        services.AddTelegramBotControllers(token);
+        var token = "5163144004:AAH2qWlP40PEt9sGT3esuaXnrE50-pTZlVQ";//your telegram bot token here
+        services.AddTelegramBotControllers(token, (cfg) =>
+        {
+            cfg.CancelCommand = "стоп";
+            cfg.CancelMessage = "Получена команда 'стоп'. Беседа закрыта.";
+            cfg.SendMenuText = "Команда не найдена. Доступные команды - в меню";
+        });
     })
     .Build();
 

@@ -7,7 +7,7 @@ namespace Telegram.Bot.Controllers;
 
 public static class ServiceCollectionExtenstions
 {
-    public static IServiceCollection AddTelegramBotControllers(this IServiceCollection services, string token)
+    public static IServiceCollection AddTelegramBotControllers(this IServiceCollection services, string token, Action<BotConfiguration>? configAction = null)
     {
         services.AddSingleton<ITelegramBotClient>(_ => new TelegramBotClient(token));
         services.AddSingleton<IUpdateHandler, MessageUpdateHandler>();
@@ -47,7 +47,7 @@ public static class ServiceCollectionExtenstions
                         }
                         continue;
                     }
-                    
+
                     var fullPath = methodAttr.Override
                         ? methodAttr.Path
                         : string.IsNullOrEmpty(basePath)
@@ -64,20 +64,10 @@ public static class ServiceCollectionExtenstions
 
         services.AddSingleton<ICommandPathManager, InMemoryCommandPathManager>();
 
+        if (configAction is not null)
+            services.Configure(configAction);
+
         return services;
-    }
-
-    private static async Task InvokeMethod(MethodInfo method, TelegramBotControllerBase controller, CancellationToken cancellationToken)
-    {
-        var parameters = method.GetParameters();
-        object?[]? args = null;
-
-        if (parameters.Length > 0 && parameters[0].ParameterType == typeof(CancellationToken))
-        {
-            args = [cancellationToken];
-        }
-
-        await (Task)method.Invoke(controller, args)!;
     }
 }
 
