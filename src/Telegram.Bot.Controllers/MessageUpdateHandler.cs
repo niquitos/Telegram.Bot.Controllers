@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Telegram.Bot.Controllers;
 
@@ -43,7 +44,7 @@ public class MessageUpdateHandler : IUpdateHandler
         if (command == botConfig.CancelCommand)
         {
             pathManager.ClearPath(chatId);
-            
+
             if (botConfig.CancelMessage is not null)
                 await botClient.SendMessage(chatId, botConfig.CancelMessage, cancellationToken: cancellationToken);
 
@@ -84,7 +85,24 @@ public class MessageUpdateHandler : IUpdateHandler
         else
         {
             pathManager.RollbackLastSegment(chatId);
+            var commands = commandRegistry.GetAvailableCommands(pathManager.GetPath(chatId));
+
+            if (botConfig.SendMenuText is not null)
+                await botClient.SendMessage(chatId, botConfig.SendMenuText, replyMarkup: GetMenu(commands), cancellationToken: cancellationToken);
+            
             _logger.LogInformation($"Unknown command. Current path: {pathManager.GetPath(chatId)}");
         }
     }
+
+    private static ReplyKeyboardMarkup GetMenu(IEnumerable<string> commands)
+    {
+        var keboardButtons = commands.Select(x => new KeyboardButton(x));
+
+        return new([keboardButtons])
+        {
+            ResizeKeyboard = true,
+            OneTimeKeyboard = false
+        };
+    }
+         
 }

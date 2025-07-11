@@ -24,4 +24,36 @@ public class CommandRegistry
         methodName = null!;
         return false;
     }
+
+    public IEnumerable<string> GetAvailableCommands(string? prefix)
+    {
+        var firstCommands = _commands.Keys.Select(x =>
+            {
+                var firstSegment = x.TrimStart('/').Split('/').FirstOrDefault();
+                return firstSegment;
+            })
+            .OfType<string>()
+            .Distinct();
+
+        if (string.IsNullOrEmpty(prefix))
+            return firstCommands;
+
+        var matchingPaths = _commands.Keys
+            .Where(path => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+
+
+        var nextSegments = matchingPaths
+        .Select(path =>
+        {
+            var remainingPath = path[prefix.Length..].TrimStart('/');
+            var firstSegment = remainingPath.Split('/').FirstOrDefault();
+            return firstSegment;
+        })
+        .OfType<string>()
+        .Distinct();
+
+        return nextSegments!;
+    }
 }
