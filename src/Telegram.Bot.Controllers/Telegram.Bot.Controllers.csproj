@@ -12,13 +12,14 @@
 
     <!-- Package Info -->
     <PackageId>Telegram.Bot.Controllers</PackageId>
-    <Version>1.1.3</Version>
+    <Version>1.1.4</Version>
     <Authors>Alexander Nikitin</Authors>
     <Description>A lightweight ASP.NET Core-style controller-based Telegram bot framework.</Description>
     <Copyright>© 2025 Alexander Nikitin</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/niquitos/Telegram.Bot.Controllers </RepositoryUrl>
     <PackageProjectUrl>https://github.com/niquitos/Telegram.Bot.Controllers </PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSource>true</IncludeSource>
   </PropertyGroup>
 
