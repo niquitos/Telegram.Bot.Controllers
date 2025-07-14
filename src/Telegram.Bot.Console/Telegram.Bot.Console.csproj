@@ -8,11 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Telegram.Bot.Controllers\Telegram.Bot.Controllers.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Telegram.Bot.Controllers" Version="1.1.5" />
   </ItemGroup>
 
 </Project>
