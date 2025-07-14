@@ -14,7 +14,7 @@ public class StartMenuController : TelegramBotControllerBase
         await MessageService.SendMessageAsync(Update.Message!.Chat.Id!,message, ct);
     }
 
-    [Command("item")] //matches start/menu
+    [Command("item")] //matches start/menu/item
     public async Task MenuItem(CancellationToken ct)
     {
         var message = "you said 'start' then 'menu' then 'item";
